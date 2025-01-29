@@ -10,7 +10,7 @@ class KeyboardAndMouseEventDetector extends StatelessWidget {
     required this.onCtrlKey,
   });
 
-  final void Function(Offset event) onScroll;
+  final void Function(Offset event, Offset pointerOffset) onScroll;
   final void Function(bool) onCtrlKey;
   final Widget child;
 
@@ -19,7 +19,8 @@ class KeyboardAndMouseEventDetector extends StatelessWidget {
     return Listener(
       onPointerSignal: (e) {
         if (e is PointerScrollEvent) {
-          onScroll(e.scrollDelta);
+          final pointerOffset = e.position;
+          onScroll(e.scrollDelta, pointerOffset);
         }
       },
       child: Focus(

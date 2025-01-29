@@ -23,6 +23,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
   DateTime _firstEntryOnScreen = DateTime.now();
   bool _zoomMode = false;
   double _mouseScale = 1;
+  double _onScreenFocusPointOffset = 0;
   final _dataAreaStartOffset = 150;
   final double padding;
 
@@ -64,21 +65,22 @@ class InfCalendarWidgetController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void scaleCalendar(double scale) {
+  void scaleCalendar(double scale, double pointOffset) {
     _scaleFactor = scale;
+    _onScreenFocusPointOffset = pointOffset;
     notifyListeners();
   }
 
-  void mouseScaleCalendar(double scale) {
+  void mouseScaleCalendar(double scale, double pointOffset) {
     if (scale < 0) _mouseScale += 0.1;
     if (scale > 0) _mouseScale -= 0.1;
-    scaleCalendar(_mouseScale);
+    scaleCalendar(_mouseScale, pointOffset);
   }
 
-  handleMouseScroll(Offset offset) {
-    final s = offset.dy;
+  handleMouseScroll(Offset offset, Offset pointerOffset) {
+    final s = -offset.dy;
     if (zoomMode) {
-      mouseScaleCalendar(s);
+      mouseScaleCalendar(s, pointerOffset.dy/2);
     } else {
       scrollCalendar(s);
     }
@@ -196,7 +198,10 @@ class InfCalendarWidgetController extends ChangeNotifier {
     final daysDiff =
         start.difference(viewStartDate).inMicroseconds ~/ durationDivider;
 
-    final topPosition = _scroll + daysDiff * scaledHeight + viewStartOffset;
+    final topPosition = _scroll +
+        daysDiff * scaledHeight +
+        viewStartOffset +
+        _onScreenFocusPointOffset;
     double height = (end.difference(start).inMicroseconds ~/ durationDivider) *
         scaledHeight;
     if (height <= 0) height = 1;

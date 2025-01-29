@@ -33,12 +33,14 @@ class _InfCalState extends State<InfCalendarView> {
   Widget build(BuildContext context) {
     controller.determinateViewPortDatesLimits(context: context);
     return KeyboardAndMouseEventDetector(
-      onScroll: (d) => controller.handleMouseScroll(d),
+      onScroll: (d, p) => controller.handleMouseScroll(d, p),
       onCtrlKey: (b) => controller.zoomMode = b,
       child: GestureDetector(
         onScaleUpdate: (details) {
           if (details.scale != 1.0) {
-            controller.scaleCalendar(details.scale);
+            final focalPoint =
+                details.focalPoint.dy + details.focalPointDelta.dy / 2;
+            controller.scaleCalendar(details.scale, focalPoint);
           }
           controller.scrollCalendar(details.focalPointDelta.dy);
         },
