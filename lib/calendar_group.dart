@@ -54,4 +54,12 @@ class CalendarGroup {
       color: color ?? this.color,
     );
   }
+
+  Map<String, dynamic> settingsToMap() {
+    return {
+      "id": id,
+      "title": title,
+      "color": color.toHex(),
+    };
+  }
 }
