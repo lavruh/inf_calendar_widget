@@ -12,8 +12,7 @@ class CalendarGroup {
   CalendarGroup(
       {required this.title, required this.entries, Color? color, String? id})
       : color = color ?? Colors.green,
-        id = id ??
-            "${title.toLowerCase()}${const Uuid().v4().replaceAll("-", "")}";
+        id = id ?? const Uuid().v4().replaceAll("-", "");
 
   @override
   String toString() {
@@ -23,9 +22,9 @@ class CalendarGroup {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is CalendarGroup &&
-              runtimeType == other.runtimeType &&
-              id == other.id;
+      other is CalendarGroup &&
+          runtimeType == other.runtimeType &&
+          id == other.id;
 
   @override
   int get hashCode => id.hashCode;
@@ -37,7 +36,7 @@ class CalendarGroup {
       title: map['title'],
       entries: [],
       color:
-      HexColor.fromHex(c), // Assuming color is stored as an int in the map
+          HexColor.fromHex(c), // Assuming color is stored as an int in the map
     );
   }
 
