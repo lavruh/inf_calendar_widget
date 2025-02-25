@@ -26,6 +26,10 @@ class InfCalendarWidgetController extends ChangeNotifier {
   double _onScreenFocusPointOffset = 0;
   final _dataAreaStartOffset = 150;
   final double padding;
+  final Color nowBackgroundColor;
+  final Color backgroundColor;
+  final Color backgroundShadeColor;
+  final Color textColor;
 
   final Function(CalendarEntry entry, String? calendarId)? onTap;
 
@@ -33,6 +37,10 @@ class InfCalendarWidgetController extends ChangeNotifier {
     this.padding = 10,
     this.calendarGroups = const <CalendarGroup>[],
     this.onTap,
+    this.nowBackgroundColor = const Color(0xFFFFE082),
+    this.backgroundColor = Colors.white,
+    this.backgroundShadeColor = const Color(0xffd3d3d3),
+    this.textColor = Colors.black,
   });
 
   bool get zoomMode => _zoomMode;
@@ -80,7 +88,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
   handleMouseScroll(Offset offset, Offset pointerOffset) {
     final s = -offset.dy;
     if (zoomMode) {
-      mouseScaleCalendar(s, pointerOffset.dy/2);
+      mouseScaleCalendar(s, pointerOffset.dy / 2);
     } else {
       scrollCalendar(s);
     }
@@ -217,7 +225,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
       child: Container(
         alignment: alignment,
         decoration: BoxDecoration(
-            color: color ?? Colors.white,
+            color: color ?? backgroundColor,
             border:
                 const Border(top: BorderSide(color: Colors.black, width: 1))),
         child: Stack(fit: StackFit.expand, children: [
@@ -228,7 +236,11 @@ class InfCalendarWidgetController extends ChangeNotifier {
                   maxHeight: height, maxWidth: crossDirectionSize ?? 0),
               child: RotatedBox(
                 quarterTurns: textDirection,
-                child: Text(title, softWrap: true),
+                child: Text(
+                  title,
+                  softWrap: true,
+                  style: TextStyle(color: textColor),
+                ),
               ),
             ),
           ),
@@ -258,6 +270,11 @@ class InfCalendarWidgetController extends ChangeNotifier {
     }
   }
 
+  Color _chooseColor(int i, bool isNow) {
+    final color = i % 2 == 0 ? backgroundColor : backgroundShadeColor;
+    return isNow ? nowBackgroundColor : color;
+  }
+
   List<Widget> _generateMinutesView(int i, DateTime d) {
     List<Widget> viewBuffer = [];
     viewBuffer.add(generateCrossFlowItem(
@@ -267,7 +284,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
       crossDirectionSize: _widgetWidth,
       crossDirectionOffset: 40,
       alignment: Alignment.centerLeft,
-      color: i % 2 == 0 ? Colors.grey.shade50 : null,
+      color: _chooseColor(i, d.isSameMinute(DateTime.now())),
     ));
 
     if (i == 0 || (d.hour == 0 && d.minute == 0)) {
@@ -279,7 +296,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         crossDirectionOffset: 20,
         textDirection: 3,
         alignment: Alignment.center,
-        color: Colors.grey.shade100,
+        color: backgroundShadeColor,
       ));
     }
     if (i == 0 || (d.weekday == 1 && d.hour == 0 && d.minute == 0)) {
@@ -306,7 +323,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         crossDirectionSize: _widgetWidth,
         crossDirectionOffset: 40,
         alignment: Alignment.centerLeft,
-        color: i % 2 == 0 ? Colors.grey.shade50 : null,
+        color: _chooseColor(d.hour, d.isSameHour(DateTime.now())),
       ));
     }
     if (i == 0 || (d.hour == 0 && d.minute == 0)) {
@@ -317,7 +334,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         crossDirectionSize: 20,
         crossDirectionOffset: 20,
         textDirection: 3,
-        color: Colors.grey.shade100,
+        color: backgroundShadeColor,
       ));
     }
     if (i == 0 || (d.weekday == 1 && d.hour == 0 && d.minute == 0)) {
@@ -343,7 +360,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         crossDirectionSize: _widgetWidth,
         crossDirectionOffset: 70,
         alignment: Alignment.centerLeft,
-        color: i % 2 == 0 ? Colors.grey.shade50 : null,
+        color: _chooseColor((i / 24).floor(), d.isSameDate(DateTime.now())),
       ));
     }
     if (i == 0 || (d.day == 1 && d.hour == 0)) {
@@ -396,13 +413,13 @@ class InfCalendarWidgetController extends ChangeNotifier {
     if (i == 0 || d.weekday == 1) {
       viewBuffer.add(generateCrossFlowItem(
         startDate: d,
-        endDate: d.add(const Duration(days: 6)),
+        endDate: d.add(const Duration(days: 7)),
         title: "wk: ${d.weekNumber()}",
         crossDirectionSize: _widgetWidth,
         crossDirectionOffset: 40,
         textDirection: 0,
         alignment: Alignment.topLeft,
-        color: i % 2 == 0 ? Colors.grey.shade50 : null,
+        color: _chooseColor(i, d.isSameWeek(DateTime.now())),
       ));
     }
     return viewBuffer;

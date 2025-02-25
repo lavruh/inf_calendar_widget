@@ -1,8 +1,31 @@
 import 'package:intl/intl.dart';
 
 extension IsSameDate on DateTime {
+  bool isSameMonth(DateTime other) {
+    return year == other.year && month == other.month;
+  }
+
   bool isSameDate(DateTime other) {
     return year == other.year && month == other.month && day == other.day;
+  }
+
+  bool isSameHour(DateTime other) {
+    return year == other.year &&
+        month == other.month &&
+        day == other.day &&
+        hour == other.hour;
+  }
+
+  bool isSameMinute(DateTime other) {
+    return year == other.year &&
+        month == other.month &&
+        day == other.day &&
+        hour == other.hour &&
+        minute == other.minute;
+  }
+
+  bool isSameWeek(DateTime other) {
+    return year == other.year && weekNumber() == other.weekNumber();
   }
 
   DateTime daysBefore(int days) {
