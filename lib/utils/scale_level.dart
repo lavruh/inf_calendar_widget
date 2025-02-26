@@ -9,6 +9,7 @@ class ScaleLevel {
         maxSize = 31,
         minSize = null,
         entrySize = isZoomIn ? zoomInSize - 0.5 : zoomOutSize + 0.5,
+        initEntrySize = 20,
         iterator = const Duration(minutes: 1);
 
   ScaleLevel.hours({
@@ -21,6 +22,7 @@ class ScaleLevel {
         maxSize = null,
         minSize = null,
         entrySize = isZoomIn ? zoomInSize - 0.5 : zoomOutSize + 0.5,
+        initEntrySize = 4,
         iterator = const Duration(minutes: 10);
 
   ScaleLevel.days({
@@ -33,6 +35,7 @@ class ScaleLevel {
         maxSize = null,
         minSize = null,
         entrySize = isZoomIn ? zoomInSize - 0.5 : zoomOutSize + 0.5,
+        initEntrySize = 1,
         iterator = const Duration(hours: 1);
 
   ScaleLevel.months({
@@ -45,6 +48,7 @@ class ScaleLevel {
         maxSize = null,
         minSize = 20,
         entrySize = isZoomIn ? zoomInSize - 0.5 : zoomOutSize + 0.5,
+        initEntrySize = 21,
         iterator = const Duration(days: 1);
 
   final int level;
@@ -54,6 +58,9 @@ class ScaleLevel {
   final double? minSize;
   final Duration iterator;
   final double entrySize;
+  final double initEntrySize;
+
+  double get midSize => (zoomInSp - zoomOutSp) / 2;
 
   ScaleLevel changeLevel(int i) {
     final l = level + i;
@@ -74,15 +81,15 @@ class ScaleLevel {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is ScaleLevel &&
-              runtimeType == other.runtimeType &&
-              level == other.level;
+      other is ScaleLevel &&
+          runtimeType == other.runtimeType &&
+          level == other.level;
 
   @override
   int get hashCode => level.hashCode;
 
   @override
   String toString() {
-    return 'ScaleLevel{level: $level, iterator: $iterator, entrySize: $entrySize}';
+    return 'ScaleLevel{level: $level, midSize: $midSize}';
   }
 }

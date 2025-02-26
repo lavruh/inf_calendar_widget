@@ -9,9 +9,9 @@ import 'package:intl/intl.dart';
 
 class InfCalendarWidgetController extends ChangeNotifier {
   List<CalendarGroup> calendarGroups;
-  ScaleLevel _scaleLevel = ScaleLevel.minutes();
-  Duration _iteration = const Duration(minutes: 1);
-  double _entryHeight = 20.0;
+  late ScaleLevel _scaleLevel;
+  late Duration _iteration;
+  late double _entryHeight;
   double _widgetWidth = 100.0;
   double _scroll = 0.0;
   int _entriesPerScreen = 0;
@@ -37,11 +37,19 @@ class InfCalendarWidgetController extends ChangeNotifier {
     this.padding = 10,
     this.calendarGroups = const <CalendarGroup>[],
     this.onTap,
+    ScaleLevel? scaleLevel,
+    double? initScale,
     this.nowBackgroundColor = const Color(0xFFFFE082),
     this.backgroundColor = Colors.white,
     this.backgroundShadeColor = const Color(0xffd3d3d3),
     this.textColor = Colors.black,
-  });
+  })  : _scaleLevel = scaleLevel ?? ScaleLevel.hours(),
+        _scaleFactor = initScale ?? 1.0 {
+    _entryHeight = _scaleLevel.initEntrySize;
+    _iteration = _scaleLevel.iterator;
+    updateControllerValues();
+    notifyListeners();
+  }
 
   bool get zoomMode => _zoomMode;
 
