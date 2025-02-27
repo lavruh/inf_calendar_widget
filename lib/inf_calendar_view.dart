@@ -42,10 +42,10 @@ class _InfCalState extends State<InfCalendarView> {
                 details.focalPoint.dy + details.focalPointDelta.dy / 2;
             controller.scaleCalendar(details.scale, focalPoint);
           }
-          controller.scrollCalendar(details.focalPointDelta.dy);
+          controller.scrollCalendar(details.focalPointDelta);
         },
         onScaleEnd: (details) {
-          controller.scrollFling(details.velocity.pixelsPerSecond.dy);
+          controller.scrollFling(details.velocity.pixelsPerSecond);
         },
         child: Stack(
           children: [

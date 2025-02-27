@@ -5,14 +5,17 @@ import 'package:inf_calendar_widget/calendar_entry.dart';
 import 'package:inf_calendar_widget/calendar_group.dart';
 import 'package:inf_calendar_widget/utils/scale_level.dart';
 import 'package:inf_calendar_widget/utils/date_extension.dart';
+import 'package:inf_calendar_widget/view_mode.dart';
+import 'package:inf_calendar_widget/view_mode_vertical.dart';
 import 'package:intl/intl.dart';
 
 class InfCalendarWidgetController extends ChangeNotifier {
   List<CalendarGroup> calendarGroups;
   late ScaleLevel _scaleLevel;
   late Duration _iteration;
-  late double _entryHeight;
-  double _widgetWidth = 100.0;
+  late double _entrySize;
+  late final ViewMode _viewMode;
+
   double _scroll = 0.0;
   int _entriesPerScreen = 0;
   DateTime? _bufferStart;
@@ -24,8 +27,6 @@ class InfCalendarWidgetController extends ChangeNotifier {
   bool _zoomMode = false;
   double _mouseScale = 1;
   double _onScreenFocusPointOffset = 0;
-  final _dataAreaStartOffset = 150;
-  final double padding;
   final Color nowBackgroundColor;
   final Color backgroundColor;
   final Color backgroundShadeColor;
@@ -34,8 +35,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
   final Function(CalendarEntry entry, String? calendarId)? onTap;
 
   InfCalendarWidgetController({
-    this.padding = 10,
     this.calendarGroups = const <CalendarGroup>[],
+    ViewMode? viewMode,
     this.onTap,
     ScaleLevel? scaleLevel,
     double? initScale,
@@ -44,8 +45,9 @@ class InfCalendarWidgetController extends ChangeNotifier {
     this.backgroundShadeColor = const Color(0xffd3d3d3),
     this.textColor = Colors.black,
   })  : _scaleLevel = scaleLevel ?? ScaleLevel.hours(),
-        _scaleFactor = initScale ?? 1.0 {
-    _entryHeight = _scaleLevel.initEntrySize;
+        _scaleFactor = initScale ?? 1.0,
+        _viewMode = viewMode ?? ViewModeVertical() {
+    _entrySize = _scaleLevel.initEntrySize;
     _iteration = _scaleLevel.iterator;
     updateControllerValues();
     notifyListeners();
@@ -59,13 +61,13 @@ class InfCalendarWidgetController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void scrollCalendar(double offset) {
-    _scroll += offset;
+  void scrollCalendar(Offset offset) {
+    _scroll += _viewMode.getValueInCorrectDirection(offset);
     notifyListeners();
   }
 
-  void scrollFling(double velocity) {
-    double v = velocity;
+  void scrollFling(Offset velocity) {
+    double v = _viewMode.getValueInCorrectDirection(velocity);
     if (v.abs() > 20) {
       Timer.periodic(const Duration(milliseconds: 1), (timer) {
         _scroll += v / 30;
@@ -98,7 +100,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
     if (zoomMode) {
       mouseScaleCalendar(s, pointerOffset.dy / 2);
     } else {
-      scrollCalendar(s);
+      _scroll += s;
+      notifyListeners();
     }
     Timer(const Duration(milliseconds: 25), () {
       updateControllerValues();
@@ -106,7 +109,11 @@ class InfCalendarWidgetController extends ChangeNotifier {
   }
 
   void determinateViewPortDatesLimits({required BuildContext context}) {
-    _entriesPerScreen = MediaQuery.of(context).size.height ~/ _entryHeight;
+    _entriesPerScreen = _viewMode.entriesPerScreen(
+      screenSize: MediaQuery.of(context).size,
+      entrySize: _entrySize,
+    );
+
     _viewStartOffsetEntries = -_entriesPerScreen * 4;
     _bufferStart = _currentDate.add(_iteration * _viewStartOffsetEntries);
     if (_scaleLevel != ScaleLevel.minutes()) {
@@ -114,7 +121,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
           minute: 0, second: 0, millisecond: 0, microsecond: 0);
     }
     _bufferEnd = _currentDate.add(_iteration * _entriesPerScreen * 5);
-    _widgetWidth = MediaQuery.of(context).size.width;
+    _viewMode.setWidgetCrossAxisSize(MediaQuery.of(context).size);
   }
 
   List<Widget> updateView() {
@@ -122,7 +129,10 @@ class InfCalendarWidgetController extends ChangeNotifier {
     final viewStartDate = _bufferStart!;
     final viewEndDate = _bufferEnd!;
     viewBuffer.addAll(_generateBackground());
-    final crossDirectSize = _getGroupCrossDirectSize();
+    final crossDirectSize = _viewMode.groupCrossAxisSize(calendarGroups.length);
+    final padding = _viewMode.groupPadding;
+    final dataAreaStartOffset = _viewMode.dataAreaStartOffset;
+
     for (final group in calendarGroups) {
       final indexOfGroup = calendarGroups.indexOf(group);
       for (final e in group.entries) {
@@ -135,9 +145,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
             endDate: e.end,
             title: e.title,
             crossDirectionSize: crossDirectSize,
-            textDirection: 4,
             color: group.color,
-            crossDirectionOffset: _dataAreaStartOffset +
+            crossDirectionOffset: dataAreaStartOffset +
                 indexOfGroup * (crossDirectSize + padding),
             useTooltip: true,
             tapCallback: () {
@@ -148,25 +157,20 @@ class InfCalendarWidgetController extends ChangeNotifier {
     return viewBuffer;
   }
 
-  double _getGroupCrossDirectSize() {
-    return ((_widgetWidth - _dataAreaStartOffset) / calendarGroups.length) -
-        (padding * calendarGroups.length);
-  }
-
   List<Widget> _generateBackground() {
     List<Widget> viewBuffer = [];
     final start = _bufferStart;
     final end = _bufferEnd;
-    final scaledHeight = (_entryHeight * _scaleFactor);
-    final viewStartOffset = _viewStartOffsetEntries * scaledHeight;
+    final scaledSize = (_entrySize * _scaleFactor);
+    final viewStartOffset = _viewStartOffsetEntries * scaledSize;
     int i = 0;
 
     if (start == null || end == null) return [];
     for (DateTime d = start;
         d.millisecondsSinceEpoch < end.millisecondsSinceEpoch;
         d = d.add(_iteration)) {
-      final p = _scroll + viewStartOffset + i * scaledHeight;
-      if (p + scaledHeight > 0 && p <= scaledHeight) _firstEntryOnScreen = d;
+      final p = _scroll + viewStartOffset + i * scaledSize;
+      if (p + scaledSize > 0 && p <= scaledSize) _firstEntryOnScreen = d;
 
       if (_scaleLevel == ScaleLevel.months()) {
         viewBuffer.addAll(_generateMonthsView(i, d));
@@ -191,8 +195,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
     required String title,
     double? crossDirectionSize,
     double crossDirectionOffset = 0,
-    int textDirection = 0,
-    AlignmentGeometry? alignment,
+    bool? textDirectionStraight,
     Color? color,
     bool useTooltip = false,
     void Function()? tapCallback,
@@ -208,71 +211,60 @@ class InfCalendarWidgetController extends ChangeNotifier {
             ? endDate
             : viewEndDate;
 
-    final scaledHeight = _entryHeight * _scaleFactor;
-    final viewStartOffset = _viewStartOffsetEntries * scaledHeight;
+    final scaledSize = _entrySize * _scaleFactor;
+    final viewStartOffset = _viewStartOffsetEntries * scaledSize;
     final durationDivider = _iteration.inMicroseconds;
     final daysDiff =
         start.difference(viewStartDate).inMicroseconds ~/ durationDivider;
 
-    final topPosition = _scroll +
-        daysDiff * scaledHeight +
+    final position = _scroll +
+        daysDiff * scaledSize +
         viewStartOffset +
         _onScreenFocusPointOffset;
-    double height = (end.difference(start).inMicroseconds ~/ durationDivider) *
-        scaledHeight;
-    if (height <= 0) height = 1;
+
+    double size =
+        (end.difference(start).inMicroseconds ~/ durationDivider) * scaledSize;
+    if (size <= 0) size = 1;
 
     final body = GestureDetector(
-      onTap: () {
-        if (tapCallback != null) {
-          tapCallback();
-        } else if (onTap != null) {
-          onTap!(CalendarEntry(start: start, end: end, title: title), null);
-        }
-      },
-      child: Container(
-        alignment: alignment,
-        decoration: BoxDecoration(
-            color: color ?? backgroundColor,
-            border:
-                const Border(top: BorderSide(color: Colors.black, width: 1))),
-        child: Stack(fit: StackFit.expand, children: [
-          Positioned(
-            top: topPosition < 0 ? -(topPosition) : 0,
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                  maxHeight: height, maxWidth: crossDirectionSize ?? 0),
-              child: RotatedBox(
-                quarterTurns: textDirection,
-                child: Text(
-                  title,
-                  softWrap: true,
-                  style: TextStyle(color: textColor),
-                ),
-              ),
-            ),
+        onTap: () {
+          if (tapCallback != null) {
+            tapCallback();
+          } else if (onTap != null) {
+            onTap!(CalendarEntry(start: start, end: end, title: title), null);
+          }
+        },
+        child: _viewMode.titlePositionWidget(
+          parentPosition: position,
+          parentSize: size,
+          backgroundColor: color ?? backgroundColor,
+          textDirectionStraight: textDirectionStraight ?? true,
+          title: Text(
+            title,
+            style: TextStyle(color: textColor),
+            overflow: TextOverflow.fade,
+            maxLines: 1,
           ),
-        ]),
-      ),
-    );
+          crossDirectionSize: crossDirectionSize,
+        ));
 
-    return Positioned(
-        top: topPosition,
-        left: crossDirectionOffset,
-        width: crossDirectionSize,
-        height: height,
+    return _viewMode.itemWidget(
+        position: position,
+        size: size,
+        crossDirectionOffset: crossDirectionOffset,
+        crossDirectionSize: crossDirectionSize,
         child: useTooltip ? Tooltip(message: title, child: body) : body);
   }
 
   void updateControllerValues() {
     _currentDate = _firstEntryOnScreen;
-    _entryHeight *= _scaleFactor;
+    _entrySize *= _scaleFactor;
     _scaleFactor = 1.0;
     _scroll = 0.0;
     final oldScaleLevel = _scaleLevel.level;
-    _scaleLevel = _scaleLevel.changeScaleLevel(entrySize: _entryHeight);
+    _scaleLevel = _scaleLevel.changeScaleLevel(entrySize: _entrySize);
     if (_scaleLevel.level != oldScaleLevel) {
-      _entryHeight = _scaleLevel.entrySize;
+      _entrySize = _scaleLevel.entrySize;
       _iteration = _scaleLevel.iterator;
       updateControllerValues();
     }
@@ -289,9 +281,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
       startDate: d,
       endDate: d.add(_iteration),
       title: DateFormat("HH : mm").format(d),
-      crossDirectionSize: _widgetWidth,
+      crossDirectionSize: _viewMode.widgetCrossAxisSize,
       crossDirectionOffset: 40,
-      alignment: Alignment.centerLeft,
       color: _chooseColor(i, d.isSameMinute(DateTime.now())),
     ));
 
@@ -302,8 +293,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         title: DateFormat("EEEE dd MMMM yyyy").format(d),
         crossDirectionSize: 20,
         crossDirectionOffset: 20,
-        textDirection: 3,
-        alignment: Alignment.center,
+        textDirectionStraight: false,
         color: backgroundShadeColor,
       ));
     }
@@ -314,8 +304,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         title: "Week: ${d.weekNumber()}",
         crossDirectionSize: 20,
         crossDirectionOffset: 0,
-        textDirection: 3,
-        alignment: Alignment.topLeft,
+        textDirectionStraight: false,
       ));
     }
     return viewBuffer;
@@ -328,9 +317,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
         startDate: d,
         endDate: d.add(_iteration * 24),
         title: DateFormat("HH:00").format(d),
-        crossDirectionSize: _widgetWidth,
+        crossDirectionSize: _viewMode.widgetCrossAxisSize,
         crossDirectionOffset: 40,
-        alignment: Alignment.centerLeft,
         color: _chooseColor(d.hour, d.isSameHour(DateTime.now())),
       ));
     }
@@ -341,7 +329,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         title: DateFormat("EEEE dd MMMM yyyy").format(d),
         crossDirectionSize: 20,
         crossDirectionOffset: 20,
-        textDirection: 3,
+        textDirectionStraight: false,
         color: backgroundShadeColor,
       ));
     }
@@ -352,7 +340,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         title: "Week: ${d.weekNumber()}",
         crossDirectionSize: 20,
         crossDirectionOffset: 0,
-        textDirection: 3,
+        textDirectionStraight: false,
       ));
     }
     return viewBuffer;
@@ -365,9 +353,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
         startDate: d,
         endDate: d.add(const Duration(days: 1)),
         title: DateFormat("EEE dd").format(d),
-        crossDirectionSize: _widgetWidth,
+        crossDirectionSize: _viewMode.widgetCrossAxisSize,
         crossDirectionOffset: 70,
-        alignment: Alignment.centerLeft,
         color: _chooseColor((i / 24).floor(), d.isSameDate(DateTime.now())),
       ));
     }
@@ -377,8 +364,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         endDate: d.addMonths(1),
         title: DateFormat("MMM - yyyy").format(d),
         crossDirectionSize: 50,
-        textDirection: 3,
-        alignment: Alignment.center,
+        textDirectionStraight: false,
       ));
     }
     if (i == 0 || (d.weekday == 1 && d.hour == 0)) {
@@ -388,8 +374,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         title: "wk: ${d.weekNumber()}",
         crossDirectionSize: 20,
         crossDirectionOffset: 50,
-        textDirection: 3,
-        alignment: Alignment.topLeft,
+        textDirectionStraight: false,
       ));
     }
     return viewBuffer;
@@ -403,8 +388,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         endDate: d.addMonths(12),
         title: DateFormat("yyyy").format(d),
         crossDirectionSize: 20,
-        textDirection: 3,
-        alignment: Alignment.center,
+        textDirectionStraight: false,
       ));
     }
     if (i == 0 || d.day == 1) {
@@ -414,8 +398,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
         title: DateFormat("MMM").format(d),
         crossDirectionSize: 20,
         crossDirectionOffset: 20,
-        textDirection: 3,
-        alignment: Alignment.center,
+        textDirectionStraight: false,
       ));
     }
     if (i == 0 || d.weekday == 1) {
@@ -423,10 +406,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
         startDate: d,
         endDate: d.add(const Duration(days: 7)),
         title: "wk: ${d.weekNumber()}",
-        crossDirectionSize: _widgetWidth,
+        crossDirectionSize: _viewMode.widgetCrossAxisSize,
         crossDirectionOffset: 40,
-        textDirection: 0,
-        alignment: Alignment.topLeft,
         color: _chooseColor(i, d.isSameWeek(DateTime.now())),
       ));
     }
