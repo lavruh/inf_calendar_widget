@@ -239,11 +239,14 @@ class InfCalendarWidgetController extends ChangeNotifier {
           parentSize: size,
           backgroundColor: color ?? backgroundColor,
           textDirectionStraight: textDirectionStraight ?? true,
-          title: Text(
-            title,
-            style: TextStyle(color: textColor),
-            overflow: TextOverflow.fade,
-            maxLines: 1,
+          title: FittedBox(
+            child: Text(
+              title,
+              style: TextStyle(color: textColor),
+              overflow: TextOverflow.fade,
+              maxLines: 2,
+              textAlign: TextAlign.center,
+            ),
           ),
           crossDirectionSize: crossDirectionSize,
         ));
@@ -280,7 +283,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
     viewBuffer.add(generateCrossFlowItem(
       startDate: d,
       endDate: d.add(_iteration),
-      title: DateFormat("HH : mm").format(d),
+      title: _viewMode.minHourFormat(d),
       crossDirectionSize: _viewMode.widgetCrossAxisSize,
       crossDirectionOffset: 40,
       color: _chooseColor(i, d.isSameMinute(DateTime.now())),
@@ -316,7 +319,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
       viewBuffer.add(generateCrossFlowItem(
         startDate: d,
         endDate: d.add(_iteration * 24),
-        title: DateFormat("HH:00").format(d),
+        title: _viewMode.hourFormat(d),
         crossDirectionSize: _viewMode.widgetCrossAxisSize,
         crossDirectionOffset: 40,
         color: _chooseColor(d.hour, d.isSameHour(DateTime.now())),
@@ -352,7 +355,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
       viewBuffer.add(generateCrossFlowItem(
         startDate: d,
         endDate: d.add(const Duration(days: 1)),
-        title: DateFormat("EEE dd").format(d),
+        title: _viewMode.dayFormat(d),
         crossDirectionSize: _viewMode.widgetCrossAxisSize,
         crossDirectionOffset: 70,
         color: _chooseColor((i / 24).floor(), d.isSameDate(DateTime.now())),
@@ -371,7 +374,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
       viewBuffer.add(generateCrossFlowItem(
         startDate: d,
         endDate: d.add(const Duration(days: 6)),
-        title: "wk: ${d.weekNumber()}",
+        title: "wk: ${NumberFormat("00").format(d.weekNumber())}",
         crossDirectionSize: 20,
         crossDirectionOffset: 50,
         textDirectionStraight: false,
@@ -405,7 +408,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
       viewBuffer.add(generateCrossFlowItem(
         startDate: d,
         endDate: d.add(const Duration(days: 7)),
-        title: "wk: ${d.weekNumber()}",
+        title: NumberFormat("00").format(d.weekNumber()),
         crossDirectionSize: _viewMode.widgetCrossAxisSize,
         crossDirectionOffset: 40,
         color: _chooseColor(i, d.isSameWeek(DateTime.now())),

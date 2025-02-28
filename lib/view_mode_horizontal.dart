@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inf_calendar_widget/view_mode.dart';
+import 'package:intl/intl.dart';
 
 class ViewModeHorizontal extends ViewMode {
   ViewModeHorizontal({
@@ -60,4 +61,13 @@ class ViewModeHorizontal extends ViewMode {
 
   @override
   double getValueInCorrectDirection(Offset value) => value.dx;
+
+  @override
+  String hourFormat(DateTime d) => DateFormat("HH\n00").format(d);
+
+  @override
+  String minHourFormat(DateTime d) => DateFormat("HH\nmm").format(d);
+
+  @override
+  String dayFormat(DateTime d) => DateFormat("EEE\ndd").format(d);
 }

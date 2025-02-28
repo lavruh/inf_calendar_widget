@@ -37,4 +37,8 @@ abstract class ViewMode {
     required Widget title,
     required Color backgroundColor,
   });
+
+  String minHourFormat(DateTime d);
+  String hourFormat(DateTime d);
+  String dayFormat(DateTime d);
 }
