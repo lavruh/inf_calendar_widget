@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:inf_calendar_widget/header_settings.dart';
 
 abstract class ViewMode {
   ViewMode({
     required this.entryMainAxisSize,
     required this.dataAreaStartOffset,
     required this.groupPadding,
+    required this.headerSettings,
   });
 
   double entryMainAxisSize;
   final double dataAreaStartOffset;
   double widgetCrossAxisSize = 100;
   double groupPadding;
+  HeaderSettings headerSettings;
 
   double groupCrossAxisSize(int groupsLength) {
     return ((widgetCrossAxisSize - dataAreaStartOffset) / groupsLength) -

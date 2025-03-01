@@ -2,12 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:inf_calendar_widget/view_mode.dart';
 import 'package:intl/intl.dart';
 
+import 'calendar_group.dart';
+import 'header_settings.dart';
+
 class ViewModeVertical extends ViewMode {
   ViewModeVertical({
     super.entryMainAxisSize = 100,
     super.dataAreaStartOffset = 150,
     super.groupPadding = 10,
-  });
+  }) : super(
+            headerSettings: HeaderSettings(
+          size: 30,
+          headerWidget: _defaultHeaderWidget,
+          backgroundColor: Colors.transparent,
+        ));
 
   @override
   setWidgetCrossAxisSize(Size value) => super.widgetCrossAxisSize = value.width;
@@ -76,4 +84,26 @@ class ViewModeVertical extends ViewMode {
 
   @override
   String dayFormat(DateTime d) => DateFormat("EEE dd").format(d);
+
+  static Widget _defaultHeaderWidget(CalendarGroup group) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(color: Colors.black, blurRadius: 10, offset: Offset(1, 2))
+        ],
+        color: group.color,
+      ),
+      child: Center(
+          child: Text(
+        group.title,
+        style: TextStyle(
+          fontFamily: "Noto",
+          fontWeight: FontWeight.bold,
+          shadows: [
+            Shadow(color: Colors.grey, blurRadius: 1, offset: Offset(0.5, 1))
+          ],
+        ),
+      )),
+    );
+  }
 }

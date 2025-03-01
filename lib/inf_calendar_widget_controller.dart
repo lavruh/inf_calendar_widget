@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:inf_calendar_widget/calendar_entry.dart';
 import 'package:inf_calendar_widget/calendar_group.dart';
+import 'package:inf_calendar_widget/header_settings.dart';
 import 'package:inf_calendar_widget/utils/scale_level.dart';
 import 'package:inf_calendar_widget/utils/date_extension.dart';
 import 'package:inf_calendar_widget/view_mode.dart';
@@ -31,6 +32,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
   final Color backgroundColor;
   final Color backgroundShadeColor;
   final Color textColor;
+  final bool showHeader;
 
   final Function(CalendarEntry entry, String? calendarId)? onTap;
 
@@ -40,6 +42,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
     this.onTap,
     ScaleLevel? scaleLevel,
     double? initScale,
+    this.showHeader = true,
     this.nowBackgroundColor = const Color(0xFFFFE082),
     this.backgroundColor = Colors.white,
     this.backgroundShadeColor = const Color(0xffd3d3d3),
@@ -124,6 +127,40 @@ class InfCalendarWidgetController extends ChangeNotifier {
     _viewMode.setWidgetCrossAxisSize(MediaQuery.of(context).size);
   }
 
+  List<Widget> generateHeader(HeaderSettings settings) {
+    List<Widget> buffer = [];
+
+    final size = settings.size;
+
+    buffer.add(_viewMode.itemWidget(
+      position: 0,
+      size: size,
+      crossDirectionOffset: 0,
+      crossDirectionSize: _viewMode.widgetCrossAxisSize,
+      child: Container(color: settings.backgroundColor),
+    ));
+
+    final crossDirectionSize =
+        _viewMode.groupCrossAxisSize(calendarGroups.length);
+    final padding = _viewMode.groupPadding;
+    final dataAreaStartOffset = _viewMode.dataAreaStartOffset;
+    for (int i = 0; i < calendarGroups.length; i++) {
+      final group = calendarGroups[i];
+      final child = settings.headerWidget;
+
+      final position = dataAreaStartOffset + i * (crossDirectionSize + padding);
+
+      buffer.add(_viewMode.itemWidget(
+          position: 0,
+          size: size - padding,
+          crossDirectionOffset: position,
+          crossDirectionSize: crossDirectionSize,
+          child: child(group)));
+    }
+
+    return buffer;
+  }
+
   List<Widget> updateView() {
     List<Widget> viewBuffer = [];
     final viewStartDate = _bufferStart!;
@@ -153,6 +190,9 @@ class InfCalendarWidgetController extends ChangeNotifier {
               if (onTap != null) onTap!(e, group.id);
             }));
       }
+    }
+    if (showHeader) {
+      viewBuffer.addAll(generateHeader(_viewMode.headerSettings));
     }
     return viewBuffer;
   }

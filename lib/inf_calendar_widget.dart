@@ -5,6 +5,7 @@ export 'calendar_entry.dart';
 export 'view_mode.dart';
 export 'view_mode_horizontal.dart';
 export 'view_mode_vertical.dart';
+export 'header_settings.dart';
 export 'utils/date_extension.dart';
 export 'utils/keyboard_and_mouse_event_detector.dart';
 export 'utils/scale_level.dart';

@@ -2,12 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:inf_calendar_widget/view_mode.dart';
 import 'package:intl/intl.dart';
 
+import 'calendar_group.dart';
+import 'header_settings.dart';
+
 class ViewModeHorizontal extends ViewMode {
   ViewModeHorizontal({
     super.entryMainAxisSize = 100,
     super.dataAreaStartOffset = 150,
     super.groupPadding = 10,
-  });
+    HeaderSettings? header,
+  }) : super(
+            headerSettings: HeaderSettings(
+          size: 150,
+          headerWidget: _defaultHeaderWidget,
+          backgroundColor: Colors.transparent,
+        ));
 
   @override
   int entriesPerScreen({required Size screenSize, required double entrySize}) =>
@@ -70,4 +79,26 @@ class ViewModeHorizontal extends ViewMode {
 
   @override
   String dayFormat(DateTime d) => DateFormat("EEE\ndd").format(d);
+
+  static Widget _defaultHeaderWidget(CalendarGroup group) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        boxShadow: [
+          BoxShadow(color: Colors.black, blurRadius: 10, offset: Offset(5, 1))
+        ],
+        color: group.color,
+      ),
+      child: Center(
+          child: Text(
+        group.title,
+        style: TextStyle(
+          fontFamily: "Noto",
+          fontWeight: FontWeight.bold,
+          shadows: [
+            Shadow(color: Colors.grey, blurRadius: 1, offset: Offset(0.5, 1))
+          ],
+        ),
+      )),
+    );
+  }
 }
