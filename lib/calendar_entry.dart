@@ -15,7 +15,7 @@ class CalendarEntry {
 
   @override
   String toString() {
-    return 'CalendarEntry{id: $id, start: $start, end: $end, title: $title}';
+    return 'CalendarEntry{$start - $end, title: $title}';
   }
 
   factory CalendarEntry.fromMap(Map<String, dynamic> map) {
@@ -51,5 +51,13 @@ class CalendarEntry {
       title: title ?? this.title,
       id: id ?? this.id,
     );
+  }
+
+  bool intersects(CalendarEntry other) {
+    return !isNotIntersecting(other);
+  }
+
+  bool isNotIntersecting(CalendarEntry other) {
+    return other.end.isBefore(start) || other.start.isAfter(end);
   }
 }

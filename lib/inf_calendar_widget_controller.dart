@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:inf_calendar_widget/calendar_entry.dart';
 import 'package:inf_calendar_widget/calendar_group.dart';
+import 'package:inf_calendar_widget/date_ranges_intersection.dart';
 import 'package:inf_calendar_widget/header_settings.dart';
 import 'package:inf_calendar_widget/utils/scale_level.dart';
 import 'package:inf_calendar_widget/utils/date_extension.dart';
@@ -163,32 +164,69 @@ class InfCalendarWidgetController extends ChangeNotifier {
 
   List<Widget> updateView() {
     List<Widget> viewBuffer = [];
-    final viewStartDate = _bufferStart!;
-    final viewEndDate = _bufferEnd!;
+    final view =
+        CalendarEntry(start: _bufferStart!, end: _bufferEnd!, title: "");
+
     viewBuffer.addAll(_generateBackground());
     final crossDirectSize = _viewMode.groupCrossAxisSize(calendarGroups.length);
     final padding = _viewMode.groupPadding;
     final dataAreaStartOffset = _viewMode.dataAreaStartOffset;
 
+    final intersection = DateRangesIntersectionChecker();
     for (final group in calendarGroups) {
       final indexOfGroup = calendarGroups.indexOf(group);
-      for (final e in group.entries) {
-        if (e.end.compareTo(viewStartDate) == -1 ||
-            e.start.compareTo(viewEndDate) == 1) {
-          continue;
+      List<CalendarEntry> entries = group.entries;
+      entries.sort((a, b) => a.start.compareTo(b.start));
+
+      double entrySize = crossDirectSize;
+      double entryOffset =
+          dataAreaStartOffset + indexOfGroup * (crossDirectSize + padding);
+
+      if (entries.isEmpty) continue;
+      for (int i = 0; i < entries.length; i++) {
+        final e = entries[i];
+        if (e.isNotIntersecting(view)) continue;
+
+        final next = i < entries.length - 1 ? entries[i + 1] : null;
+
+        if (next != null) {
+          if (intersection.checkAndUpdateIntersection(e, next)) continue;
         }
-        viewBuffer.add(generateCrossFlowItem(
-            startDate: e.start,
-            endDate: e.end,
-            title: e.title,
-            crossDirectionSize: crossDirectSize,
-            color: group.color,
-            crossDirectionOffset: dataAreaStartOffset +
-                indexOfGroup * (crossDirectSize + padding),
-            useTooltip: true,
-            tapCallback: () {
-              if (onTap != null) onTap!(e, group.id);
-            }));
+
+        final intersectionWidgets = intersection.getIntersectingItems(
+            size: entrySize,
+            crossDirectionOffset: entryOffset,
+            widgetGenerator: (
+                    {required double size,
+                    required double offset,
+                    required CalendarEntry entry}) =>
+                generateCrossFlowItem(
+                    startDate: entry.start,
+                    endDate: entry.end,
+                    title: entry.title,
+                    crossDirectionSize: size,
+                    color: group.color,
+                    crossDirectionOffset: offset,
+                    useTooltip: true,
+                    tapCallback: () {
+                      if (onTap != null) onTap!(entry, group.id);
+                    }));
+
+        if (intersectionWidgets.isNotEmpty) {
+          viewBuffer.addAll(intersectionWidgets);
+        } else {
+          viewBuffer.add(generateCrossFlowItem(
+              startDate: e.start,
+              endDate: e.end,
+              title: e.title,
+              crossDirectionSize: entrySize,
+              color: group.color,
+              crossDirectionOffset: entryOffset,
+              useTooltip: true,
+              tapCallback: () {
+                if (onTap != null) onTap!(e, group.id);
+              }));
+        }
       }
     }
     if (showHeader) {
