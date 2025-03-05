@@ -11,13 +11,13 @@ abstract class ViewMode {
 
   double entryMainAxisSize;
   final double dataAreaStartOffset;
-  double widgetCrossAxisSize = 100;
+  double widgetCrossAxisSize = 0;
   double groupPadding;
   HeaderSettings headerSettings;
 
   double groupCrossAxisSize(int groupsLength) {
-    return ((widgetCrossAxisSize - dataAreaStartOffset) / groupsLength) -
-        (groupPadding * groupsLength);
+    return ((widgetCrossAxisSize - 50 - dataAreaStartOffset) / groupsLength) -
+        (groupPadding);
   }
 
   void setWidgetCrossAxisSize(Size value);

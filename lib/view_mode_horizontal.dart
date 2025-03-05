@@ -8,7 +8,7 @@ import 'header_settings.dart';
 class ViewModeHorizontal extends ViewMode {
   ViewModeHorizontal({
     super.entryMainAxisSize = 100,
-    super.dataAreaStartOffset = 150,
+    super.dataAreaStartOffset = 120,
     super.groupPadding = 10,
     HeaderSettings? header,
   }) : super(
