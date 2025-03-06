@@ -5,11 +5,15 @@ import 'package:inf_calendar_widget/calendar_entry.dart';
 import 'package:inf_calendar_widget/calendar_group.dart';
 import 'package:inf_calendar_widget/date_ranges_intersection.dart';
 import 'package:inf_calendar_widget/header_settings.dart';
+import 'package:inf_calendar_widget/title_widget.dart';
 import 'package:inf_calendar_widget/utils/scale_level.dart';
 import 'package:inf_calendar_widget/utils/date_extension.dart';
 import 'package:inf_calendar_widget/view_mode.dart';
 import 'package:inf_calendar_widget/view_mode_vertical.dart';
 import 'package:intl/intl.dart';
+
+import 'calendar_entry_widget.dart';
+import 'entry_title_widget.dart';
 
 class InfCalendarWidgetController extends ChangeNotifier {
   List<CalendarGroup> calendarGroups;
@@ -36,6 +40,12 @@ class InfCalendarWidgetController extends ChangeNotifier {
   final bool showHeader;
 
   final Function(CalendarEntry entry, String? calendarId)? onTap;
+  final Widget Function({required String title, required Color textColor})
+      entryTitleBuilder;
+  final Widget Function({required String title, required Color textColor})
+      calendarTitleBuilder;
+  final Widget Function({required Widget title, required Color backgroundColor})
+      entryWidgetBuilder;
 
   InfCalendarWidgetController({
     this.calendarGroups = const <CalendarGroup>[],
@@ -48,6 +58,9 @@ class InfCalendarWidgetController extends ChangeNotifier {
     this.backgroundColor = Colors.white,
     this.backgroundShadeColor = const Color(0xffd3d3d3),
     this.textColor = Colors.black,
+    this.entryTitleBuilder = defaultEntryTitleWidget,
+    this.calendarTitleBuilder = defaultTitleWidget,
+    this.entryWidgetBuilder = defaultEntryWidget,
   })  : _scaleLevel = scaleLevel ?? ScaleLevel.hours(),
         _scaleFactor = initScale ?? 1.0,
         _viewMode = viewMode ?? ViewModeVertical() {
@@ -208,6 +221,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
                     color: group.color,
                     crossDirectionOffset: offset,
                     useTooltip: true,
+                    titlePosWidget: (titleWidget) => entryWidgetBuilder(
+                        title: titleWidget, backgroundColor: group.color),
                     tapCallback: () {
                       if (onTap != null) onTap!(entry, group.id);
                     }));
@@ -223,6 +238,8 @@ class InfCalendarWidgetController extends ChangeNotifier {
               color: group.color,
               crossDirectionOffset: entryOffset,
               useTooltip: true,
+              titlePosWidget: (titleWidget) => entryWidgetBuilder(
+                  title: titleWidget, backgroundColor: group.color),
               tapCallback: () {
                 if (onTap != null) onTap!(e, group.id);
               }));
@@ -277,6 +294,7 @@ class InfCalendarWidgetController extends ChangeNotifier {
     Color? color,
     bool useTooltip = false,
     void Function()? tapCallback,
+    Widget Function(Widget title)? titlePosWidget,
   }) {
     final viewStartDate = _bufferStart!;
     final start =
@@ -304,6 +322,9 @@ class InfCalendarWidgetController extends ChangeNotifier {
         (end.difference(start).inMicroseconds ~/ durationDivider) * scaledSize;
     if (size <= 0) size = 1;
 
+    final titleWidget =
+        entryTitleBuilder(title: title, textColor: Colors.black);
+
     final body = GestureDetector(
         onTap: () {
           if (tapCallback != null) {
@@ -312,22 +333,17 @@ class InfCalendarWidgetController extends ChangeNotifier {
             onTap!(CalendarEntry(start: start, end: end, title: title), null);
           }
         },
-        child: _viewMode.titlePositionWidget(
-          parentPosition: position,
-          parentSize: size,
-          backgroundColor: color ?? backgroundColor,
-          textDirectionStraight: textDirectionStraight ?? true,
-          title: FittedBox(
-            child: Text(
-              title,
-              style: TextStyle(color: textColor),
-              overflow: TextOverflow.fade,
-              maxLines: 2,
-              textAlign: TextAlign.center,
-            ),
-          ),
-          crossDirectionSize: crossDirectionSize,
-        ));
+        child: titlePosWidget != null
+            ? titlePosWidget(titleWidget)
+            : _viewMode.titlePositionWidget(
+                parentPosition: position,
+                parentSize: size,
+                backgroundColor: color ?? backgroundColor,
+                textDirectionStraight: textDirectionStraight ?? true,
+                title:
+                    calendarTitleBuilder(title: title, textColor: Colors.black),
+                crossDirectionSize: crossDirectionSize,
+              ));
 
     return _viewMode.itemWidget(
         position: position,
@@ -494,4 +510,16 @@ class InfCalendarWidgetController extends ChangeNotifier {
     }
     return viewBuffer;
   }
+
+  static Widget defaultEntryWidget(
+          {required Widget title, required Color backgroundColor}) =>
+      CalendarEntryWidget(title: title, backgroundColor: backgroundColor);
+
+  static Widget defaultTitleWidget(
+          {required String title, required Color textColor}) =>
+      TitleWidget(title: title, textColor: textColor);
+
+  static Widget defaultEntryTitleWidget(
+          {required String title, required Color textColor}) =>
+      EntryTitleWidget(title: title, textColor: textColor);
 }
